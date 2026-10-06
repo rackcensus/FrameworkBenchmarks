@@ -26,6 +26,7 @@ COPY . /rails/
 ENV RAILS_ENV=production_postgresql
 ENV PORT=8080
 ENV REDIS_URL=redis://localhost:6379/0
+ENV RC_ENABLE_CACHE=1
 CMD service redis-server start && \
     nginx -c /rails/config/nginx.conf && \
     RACK_ENV=production bundle exec pitchfork -c config/pitchfork.rb

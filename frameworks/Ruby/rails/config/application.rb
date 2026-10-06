@@ -48,9 +48,11 @@ module Hello
 
     config.active_support.isolation_level = :fiber if defined?(Falcon)
 
-    config.to_prepare do
-      HelloWorldController::ALL_IDS.each do |id|
-        Rails.cache.write("world_#{id}", World.find(id).as_json, expires_in: 1.day)
+    if ENV["RC_ENABLE_CACHE"] == "1"
+      config.to_prepare do
+        HelloWorldController::ALL_IDS.each do |id|
+          Rails.cache.write("world_#{id}", World.find(id).as_json, expires_in: 1.day)
+        end
       end
     end
   end

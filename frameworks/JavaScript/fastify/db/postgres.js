@@ -7,7 +7,7 @@ const clientOpts = {
   database: process.env.PG_DBNAME,
 };
 
-const sql = postgres({ ...clientOpts, max: 1 });
+const sql = postgres({ ...clientOpts, max: Number(process.env.RC_DB_POOL) || 1 });
 
 async function allFortunes() {
   return sql`select id, message from fortune`;

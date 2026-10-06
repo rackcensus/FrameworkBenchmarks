@@ -19,8 +19,6 @@ COPY --link deploy/conf/* /etc/php/8.5/fpm/
 WORKDIR /laravel
 COPY --link . .
 
-RUN if [ $(nproc) = 2 ]; then sed -i "s|pm.max_children = 1024|pm.max_children = 512|g" /etc/php/8.5/fpm/php-fpm.conf ; fi;
-
 RUN mkdir -p bootstrap/cache \
             storage/logs \
             storage/framework/sessions \
@@ -35,5 +33,4 @@ EXPOSE 8080
 # Uncomment next line for Laravel console error logging to be viewable in docker logs
 # RUN echo "catch_workers_output = yes" >> /etc/php/8.5/fpm/php-fpm.conf
 
-CMD service php8.5-fpm start && \
-    nginx -c /laravel/deploy/nginx.conf
+CMD ["/laravel/deploy/start-fpm.sh"]

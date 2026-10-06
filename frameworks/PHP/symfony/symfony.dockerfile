@@ -21,8 +21,6 @@ COPY --link deploy/conf/* /etc/php/8.5/fpm/
 WORKDIR /symfony
 COPY --link . .
 
-RUN if [ $(nproc) = 2 ]; then sed -i "s|pm.max_children = 1024|pm.max_children = 512|g" /etc/php/8.5/fpm/php-fpm.conf ; fi;
-
 RUN composer install --optimize-autoloader --classmap-authoritative --no-dev --no-scripts --quiet
 RUN cp deploy/postgresql/.env . && composer dump-env prod && bin/console cache:clear
 
@@ -34,5 +32,4 @@ EXPOSE 8080
 # RUN echo "catch_workers_output = yes" >> /etc/php/8.5/fpm/php-fpm.conf
 
 RUN mkdir -p /run/php
-CMD service php8.5-fpm start && \
-    nginx -c /symfony/deploy/nginx.conf
+CMD ["/symfony/deploy/start-fpm.sh"]

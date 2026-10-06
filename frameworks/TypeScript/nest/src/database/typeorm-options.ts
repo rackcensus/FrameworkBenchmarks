@@ -42,7 +42,7 @@ export function createTypeOrmOptions(): TypeOrmModuleOptions {
         password: 'benchmarkdbpass',
         entities: [SqlWorld, SqlFortune],
         extra: {
-          max: 30,
+          max: Number(process.env.RC_DB_POOL) || 30,
         },
       };
   }

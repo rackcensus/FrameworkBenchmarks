@@ -1,5 +1,5 @@
 const cluster = require("cluster");
-const numCPUs = require("os").cpus().length;
+const numCPUs = Number(process.env.RC_WORKERS) || require("os").cpus().length;
 
 if (cluster.isPrimary) {
   console.log(`Primary ${process.pid} is running`);

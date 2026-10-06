@@ -5,7 +5,7 @@ const sql = postgres({
   user: "benchmarkdbuser",
   password: "benchmarkdbpass",
   database: "hello_world",
-  max: 1,
+  max: Number(process.env.RC_DB_POOL) || 1,
 });
 
 export const fortunes = () => sql`SELECT id, message FROM fortune`;

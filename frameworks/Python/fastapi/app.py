@@ -22,7 +22,7 @@ from random import randint, sample
 
 READ_ROW_SQL = 'SELECT "id", "randomnumber" FROM "world" WHERE id = $1'
 WRITE_ROW_SQL = 'UPDATE "world" SET "randomnumber"=$1 WHERE id=$2'
-MAX_POOL_SIZE = 1000//multiprocessing.cpu_count()
+MAX_POOL_SIZE = int(os.environ.get('RC_DB_POOL') or 1000//multiprocessing.cpu_count())
 MIN_POOL_SIZE = max(int(MAX_POOL_SIZE / 2), 1)
 
 

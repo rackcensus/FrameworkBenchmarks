@@ -56,7 +56,7 @@ async function bootstrapFastify() {
 }
 
 if (cluster.isPrimary) {
-  const cpus = os.cpus().length;
+  const cpus = Number(process.env.RC_WORKERS) || os.cpus().length;
   for (let i = 0; i < cpus; i++) {
     cluster.fork();
   }

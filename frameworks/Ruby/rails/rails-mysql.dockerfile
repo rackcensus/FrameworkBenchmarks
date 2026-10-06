@@ -25,6 +25,7 @@ ENV RAILS_MAX_THREADS=5
 ENV RAILS_ENV=production_mysql
 ENV PORT=8080
 ENV REDIS_URL=redis://localhost:6379/0
+ENV RC_ENABLE_CACHE=1
 CMD export WEB_CONCURRENCY=$(($(nproc)*5/4)) && \
     service redis-server start && \
     bin/rails server

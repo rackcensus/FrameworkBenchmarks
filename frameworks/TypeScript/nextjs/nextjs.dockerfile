@@ -17,4 +17,4 @@ RUN npm run build \
 
 ENV NODE_ENV="production"
 
-CMD ["node", ".next/standalone/server.js"]
+CMD ["node", "cluster.js"]

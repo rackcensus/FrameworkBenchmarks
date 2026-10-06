@@ -3,7 +3,7 @@ import os
 
 _is_travis = os.environ.get('TRAVIS') == 'true'
 
-workers = multiprocessing.cpu_count()
+workers = int(os.environ.get('RC_WORKERS') or multiprocessing.cpu_count())
 
 bind = "0.0.0.0:8080"
 keepalive = 120

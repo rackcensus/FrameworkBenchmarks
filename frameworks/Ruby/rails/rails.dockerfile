@@ -5,7 +5,7 @@ RUN apt-get update -yqq && apt-get install -yqq --no-install-recommends redis-se
 EXPOSE 8080
 WORKDIR /rails
 
-# ENV RUBY_YJIT_ENABLE=1 YJIT is enabled in config/initializers/enable_yjit.rb
+ENV RUBY_YJIT_ENABLE=1
 ENV RUBY_MN_THREADS=1
 
 # Use Jemalloc
@@ -25,6 +25,7 @@ ENV RAILS_MAX_THREADS=5
 ENV RAILS_ENV=production_postgresql
 ENV PORT=8080
 ENV REDIS_URL=redis://localhost:6379/0
-CMD export WEB_CONCURRENCY=$(($(nproc)*5/4)) && \
-    service redis-server start && \
+CMD export WEB_CONCURRENCY=${RC_WORKERS:-$(($(nproc)*5/4))} && \
+    export RAILS_MAX_THREADS=${RC_THREADS:-$RAILS_MAX_THREADS} && \
+    if [ "$RC_ENABLE_CACHE" = "1" ]; then service redis-server start; fi && \
     bin/rails server

@@ -4,7 +4,10 @@ import { Database, WorldRow } from "./schema.js"
 
 export const db = new Kysely<Database>({
   dialect: new PostgresDialect({
-    pool: new Pool({ connectionString: process.env.DATABASE_URL }),
+    pool: new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: Number(process.env.RC_DB_POOL) || 10,
+    }),
   }),
 })
 
