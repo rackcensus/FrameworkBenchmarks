@@ -16,7 +16,7 @@
         "orm": "Micro",
         "approach": "Realistic",
         "notes": "",
-        "port": 3000,
+        "port": 8080,
         "json_url": "/json",
         "db_url": "/db",
         "query_url": "/queries?queries=",

@@ -4,13 +4,13 @@
 
 | Test | Source Code | URL |
 | --- | --- | --- |
-| [JSON Serialization][] | [`app/json/route.ts`][] | http://localhost:3000/json |
-| [Single Database Query][] | [`app/db/route.ts`][] | http://localhost:3000/db |
-| [Multiple Database Queries][] | [`app/queries/route.ts`][] | http://localhost:3000/queries?queries= |
-| [Fortunes][] | [`app/fortunes/page.tsx`][] | http://localhost:3000/fortunes |
-| [Database Updates][] | [`app/updates/route.ts`][] | http://localhost:3000/updates?queries= |
-| [Plaintext][] | [`app/plaintext/route.ts`][] | http://localhost:3000/plaintext |
-| [Caching][] | [`app/cached-queries/route.ts`][] | http://localhost:3000/cached-queries?queries= |
+| [JSON Serialization][] | [`app/json/route.ts`][] | http://localhost:8080/json |
+| [Single Database Query][] | [`app/db/route.ts`][] | http://localhost:8080/db |
+| [Multiple Database Queries][] | [`app/queries/route.ts`][] | http://localhost:8080/queries?queries= |
+| [Fortunes][] | [`app/fortunes/page.tsx`][] | http://localhost:8080/fortunes |
+| [Database Updates][] | [`app/updates/route.ts`][] | http://localhost:8080/updates?queries= |
+| [Plaintext][] | [`app/plaintext/route.ts`][] | http://localhost:8080/plaintext |
+| [Caching][] | [`app/cached-queries/route.ts`][] | http://localhost:8080/cached-queries?queries= |
 
 [JSON Serialization]: https://github.com/TechEmpower/FrameworkBenchmarks/wiki/Project-Information-Framework-Tests-Overview#json-serialization
 [Single Database Query]: https://github.com/TechEmpower/FrameworkBenchmarks/wiki/Project-Information-Framework-Tests-Overview#single-database-query
