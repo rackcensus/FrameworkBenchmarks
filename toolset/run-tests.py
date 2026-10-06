@@ -212,6 +212,11 @@ def main(argv=None):
         '--force-rm',
         action='store_true',
         help='Remove intermediate docker containers after running.')
+    parser.add_argument(
+        '--skip-build',
+        action='store_true',
+        default=False,
+        help='Use the existing local techempower/tfb.test.<name> image instead of building it.')
 
     # Network options
     parser.add_argument(

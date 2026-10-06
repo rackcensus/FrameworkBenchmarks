@@ -109,6 +109,19 @@ class DockerHelper:
         '''
         log_prefix = "%s: " % test.name
 
+        if self.benchmarker.config.skip_build:
+            image = "techempower/tfb.test.%s" % test.name
+            try:
+                self.server.images.get(image)
+            except docker.errors.ImageNotFound:
+                log("Skipping the build but %s does not exist locally" % image,
+                    prefix=log_prefix,
+                    color=Fore.RED)
+                return 1
+            log("Skipping the build, using the existing %s image" % image,
+                prefix=log_prefix)
+            return 0
+
         # Build the test image
         test_docker_file = '%s.dockerfile' % test.name
         if hasattr(test, 'dockerfile'):
@@ -204,6 +217,10 @@ class DockerHelper:
             ports = {}
             environment = {}
 
+            for key, value in os.environ.items():
+                if key.startswith('RC_'):
+                    environment[key] = value
+
             if self.benchmarker.config.mode == "debug":
                 environment['DEBUG'] = 'true'
                 ports = {test.port: test.port}
@@ -236,7 +253,7 @@ class DockerHelper:
                 detach=True,
                 init=True,
                 extra_hosts=extra_hosts,
-                privileged=True,
+                privileged=os.getenv('TFB_PRIVILEGED', '1') != '0',
                 ulimits=ulimit,
                 mem_limit=mem_limit,
                 sysctls=sysctl,

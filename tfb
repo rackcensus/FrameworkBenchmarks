@@ -103,4 +103,8 @@ fi
 
 test -t 1 && USE_TTY="-t"
 docker build -t techempower/tfb --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) - < ${SCRIPT_ROOT}/Dockerfile
-exec docker run -i ${USE_TTY} --rm --network tfb -e USER_ID=$(id -u) -v /var/run/docker.sock:/var/run/docker.sock -v ${SCRIPT_ROOT}:/FrameworkBenchmarks techempower/tfb "${@}"
+PASS_ENV=""
+for name in TFB_PRIVILEGED $(compgen -e | grep '^RC_'); do
+  PASS_ENV="${PASS_ENV} -e ${name}"
+done
+exec docker run -i ${USE_TTY} --rm --network tfb -e USER_ID=$(id -u) ${PASS_ENV} -v /var/run/docker.sock:/var/run/docker.sock -v ${SCRIPT_ROOT}:/FrameworkBenchmarks techempower/tfb "${@}"

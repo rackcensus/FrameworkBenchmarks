@@ -107,7 +107,8 @@ class Benchmarker:
 
             # After benchmarks are complete for all test types in this test,
             # let's clean up leftover test images (techempower/tfb.test.test-name)
-            self.docker_helper.clean()
+            if not self.config.skip_build:
+                self.docker_helper.clean()
         return success
 
     def __run_test(self, test, benchmark_log):
