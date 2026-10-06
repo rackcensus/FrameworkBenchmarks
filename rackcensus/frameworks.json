@@ -1,0 +1,12 @@
+[
+  {"name": "nextjs", "test": "nextjs", "directory": "frameworks/TypeScript/nextjs", "image": "tfb-nextjs", "class": "async"},
+  {"name": "express", "test": "express-postgresjs", "directory": "frameworks/JavaScript/express", "image": "tfb-express", "class": "async"},
+  {"name": "fastify", "test": "fastify-postgres", "directory": "frameworks/JavaScript/fastify", "image": "tfb-fastify", "class": "async"},
+  {"name": "nestjs", "test": "nestjs", "directory": "frameworks/TypeScript/nest", "image": "tfb-nestjs", "class": "async"},
+  {"name": "nuxt", "test": "nuxt", "directory": "frameworks/TypeScript/nuxt", "image": "tfb-nuxt", "class": "async"},
+  {"name": "fastapi", "test": "fastapi", "directory": "frameworks/Python/fastapi", "image": "tfb-fastapi", "class": "async"},
+  {"name": "django", "test": "django-postgresql", "directory": "frameworks/Python/django", "image": "tfb-django", "class": "threaded"},
+  {"name": "rails", "test": "rails", "directory": "frameworks/Ruby/rails", "image": "tfb-rails", "class": "threaded"},
+  {"name": "laravel", "test": "laravel", "directory": "frameworks/PHP/laravel", "image": "tfb-laravel", "class": "prefork"},
+  {"name": "symfony", "test": "symfony", "directory": "frameworks/PHP/symfony", "image": "tfb-symfony", "class": "prefork"}
+]
