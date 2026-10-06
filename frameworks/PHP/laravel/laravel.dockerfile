@@ -7,7 +7,7 @@ RUN LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php > /dev/null && \
     apt-get upgrade -yqq > /dev/null
 
 RUN apt-get install -yqq nginx git unzip \
-    php8.5-bcmath php8.5-cli php8.5-fpm php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-intl > /dev/null
+    php8.5-bcmath php8.5-cli php8.5-fpm php8.5-pgsql php8.5-mbstring php8.5-xml php8.5-curl php8.5-intl > /dev/null
 
 # Use Jemalloc for optimize
 RUN apt install libjemalloc2
@@ -18,6 +18,8 @@ COPY --from=composer/composer:2-bin@sha256:696bfbbb82d8ab6ad3672c505bedd659e3815
 COPY --link deploy/conf/* /etc/php/8.5/fpm/
 WORKDIR /laravel
 COPY --link . .
+
+ENV DB_CONNECTION=pgsql DB_PORT=5432
 
 RUN mkdir -p bootstrap/cache \
             storage/logs \

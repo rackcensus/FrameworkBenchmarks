@@ -11,7 +11,7 @@
 			"port": 8080,
 			"approach": "Realistic",
 			"classification": "Fullstack",
-			"database": "MySQL",
+			"database": "Postgres",
 			"framework": "laravel",
 			"language": "PHP",
 			"flavor": "PHP8",
