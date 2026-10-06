@@ -1,0 +1,29 @@
+{
+  "framework": "nuxt",
+  "maintainers": [],
+  "tests": [
+    {
+      "default": {
+        "json_url": "/json",
+        "db_url": "/db",
+        "fortune_url": "/fortunes",
+        "port": 8080,
+        "approach": "Realistic",
+        "classification": "Fullstack",
+        "database": "Postgres",
+        "framework": "nuxt",
+        "language": "TypeScript",
+        "flavor": "None",
+        "orm": "Raw",
+        "platform": "nodejs",
+        "webserver": "None",
+        "os": "Linux",
+        "database_os": "Linux",
+        "display_name": "Nuxt",
+        "notes": "",
+        "versus": "nodejs",
+        "tags": []
+      }
+    }
+  ]
+}
