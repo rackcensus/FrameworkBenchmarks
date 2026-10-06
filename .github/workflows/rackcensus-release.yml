@@ -1,0 +1,52 @@
+name: rackcensus release
+
+on:
+  push:
+    tags: ["rackcensus-*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to create, for example rackcensus-2026.10.07-1
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/rackcensus-images.yml
+    with:
+      tag: ${{ inputs.tag || github.ref_name }}
+    permissions:
+      contents: read
+      packages: write
+
+  publish:
+    needs: images
+    runs-on: ubuntu-24.04
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: index-*
+          path: artifacts
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: check-*
+          path: artifacts
+          merge-multiple: true
+      - name: Build frameworks.json
+        run: python3 rackcensus/release.py --artifacts artifacts --release "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA" --out frameworks.json
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha256sum frameworks.json > SHA256SUMS
+          gh release create "$RELEASE_TAG" frameworks.json SHA256SUMS \
+            --target "$GITHUB_SHA" \
+            --title "$RELEASE_TAG" \
+            --notes "Framework images built from $GITHUB_SHA, verified with the TFB verifier on amd64 and arm64. frameworks.json lists each image's index and per-platform digests, sizes and memory measurements."

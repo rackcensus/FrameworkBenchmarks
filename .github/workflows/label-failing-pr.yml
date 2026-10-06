@@ -1,9 +1,5 @@
 name: Label PR if failed
-on:
-  workflow_run:
-    workflows: [ "build" ]
-    types:
-      - completed
+on: [ workflow_dispatch ]
 jobs:
   apply_label:
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'failure' }}

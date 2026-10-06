@@ -1,7 +1,5 @@
 name: get-maintainers
-on: 
-  pull_request:
-    types: [opened, reopened]
+on: [ workflow_dispatch ]
 permissions:
   pull-requests: write
 jobs:

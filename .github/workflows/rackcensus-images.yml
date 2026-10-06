@@ -1,0 +1,243 @@
+name: rackcensus images
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "frameworks/**"
+      - "toolset/**"
+      - "rackcensus/**"
+      - "Dockerfile"
+      - "tfb"
+      - ".github/workflows/rackcensus-images.yml"
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/rackcensus
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      frameworks: ${{ steps.list.outputs.frameworks }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: list
+        run: echo "frameworks=$(python3 rackcensus/frameworks.py matrix | jq -c '[.[].name]')" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: matrix
+    name: build ${{ matrix.framework }} for ${{ matrix.arch }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJSON(needs.matrix.outputs.frameworks) }}
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v5
+      - id: info
+        run: python3 rackcensus/frameworks.py info "${{ matrix.framework }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.info.outputs.DIRECTORY }}
+          file: ${{ steps.info.outputs.DIRECTORY }}/${{ steps.info.outputs.DOCKERFILE }}
+          platforms: linux/${{ matrix.arch }}
+          provenance: false
+          sbom: false
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=${{ steps.info.outputs.IMAGE }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ steps.info.outputs.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ steps.info.outputs.IMAGE }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ steps.info.outputs.IMAGE }}-${{ matrix.arch }}
+      - name: Record the digest
+        env:
+          IMAGE: ${{ steps.info.outputs.IMAGE }}
+          ARCH: ${{ matrix.arch }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p out
+          jq -n --arg image "$IMAGE" --arg arch "$ARCH" --arg digest "$DIGEST" \
+            '{image: $image, arch: $arch, platform: ("linux/" + $arch), digest: $digest}' > "out/build-$IMAGE-$ARCH.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ steps.info.outputs.IMAGE }}-${{ matrix.arch }}
+          path: out/
+
+  merge:
+    needs: [matrix, build]
+    name: merge ${{ matrix.framework }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJSON(needs.matrix.outputs.frameworks) }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: info
+        run: python3 rackcensus/frameworks.py info "${{ matrix.framework }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-${{ steps.info.outputs.IMAGE }}-*
+          path: in
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create the multi-arch index
+        env:
+          IMAGE: ${{ steps.info.outputs.IMAGE }}
+          REPO: ${{ env.REGISTRY }}/${{ steps.info.outputs.IMAGE }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          refs=()
+          for file in in/build-*.json; do
+            refs+=("$REPO@$(jq -r .digest "$file")")
+          done
+          tags=(-t "$REPO:$GITHUB_SHA")
+          if [ -n "$RELEASE_TAG" ]; then
+            tags+=(-t "$REPO:$RELEASE_TAG")
+          fi
+          docker buildx imagetools create "${tags[@]}" "${refs[@]}"
+          index=$(docker buildx imagetools inspect "$REPO:$GITHUB_SHA" --format '{{json .Manifest}}' | jq -r .digest)
+          platforms='{}'
+          for file in in/build-*.json; do
+            platform=$(jq -r .platform "$file")
+            digest=$(jq -r .digest "$file")
+            bytes=$(docker buildx imagetools inspect --raw "$REPO@$digest" | jq '[.layers[].size] | add')
+            platforms=$(jq --arg p "$platform" --arg d "$digest" --argjson b "$bytes" \
+              '. + {($p): {digest: $d, compressed_bytes: $b}}' <<< "$platforms")
+          done
+          mkdir -p out
+          jq -n --arg image "$IMAGE" --arg repo "$REPO" --arg index "$index" --argjson platforms "$platforms" \
+            '{image: $image, repo: $repo, index: $index, platforms: $platforms}' > "out/index-$IMAGE.json"
+          cat "out/index-$IMAGE.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: index-${{ steps.info.outputs.IMAGE }}
+          path: out/
+
+  check:
+    needs: [matrix, merge]
+    name: check ${{ matrix.framework }} on ${{ matrix.arch }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJSON(needs.matrix.outputs.frameworks) }}
+        arch: [amd64, arm64]
+    env:
+      TFB_PRIVILEGED: "0"
+    steps:
+      - uses: actions/checkout@v5
+      - id: info
+        run: python3 rackcensus/frameworks.py info "${{ matrix.framework }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          name: index-${{ steps.info.outputs.IMAGE }}
+          path: in
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull the pushed digest
+        env:
+          IMAGE: ${{ steps.info.outputs.IMAGE }}
+          TEST: ${{ steps.info.outputs.TEST }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          repo=$(jq -r .repo "in/index-$IMAGE.json")
+          digest=$(jq -r --arg p "linux/$ARCH" '.platforms[$p].digest' "in/index-$IMAGE.json")
+          docker pull "$repo@$digest"
+          docker tag "$repo@$digest" "techempower/tfb.test.$TEST"
+          {
+            echo "PULLED=$repo@$digest"
+            echo "DIGEST=$digest"
+            echo "UNPACKED=$(docker image inspect "$repo@$digest" --format '{{.Size}}')"
+          } >> "$GITHUB_ENV"
+      - id: upstream
+        name: Verify with upstream sizing
+        continue-on-error: true
+        env:
+          TEST: ${{ steps.info.outputs.TEST }}
+        run: ./tfb --mode verify --test "$TEST" --type json db fortune --skip-build
+      - id: profile
+        name: Verify with the 2 cpu / 2 gb profile
+        continue-on-error: true
+        env:
+          NAME: ${{ steps.info.outputs.NAME }}
+          TEST: ${{ steps.info.outputs.TEST }}
+        run: |
+          set -euo pipefail
+          set -a
+          eval "$(python3 rackcensus/frameworks.py profile "$NAME")"
+          set +a
+          ./tfb --mode verify --test "$TEST" --type json db fortune --skip-build --cpuset-cpus 0-1 --test-container-memory 2g
+      - id: rss
+        name: Measure memory under load
+        continue-on-error: true
+        env:
+          NAME: ${{ steps.info.outputs.NAME }}
+          ARCH: ${{ matrix.arch }}
+        run: python3 rackcensus/measure_rss.py --name "$NAME" --image "$PULLED" --arch "$ARCH" --out rss.json
+      - name: Record the check
+        if: always()
+        env:
+          IMAGE: ${{ steps.info.outputs.IMAGE }}
+          NAME: ${{ steps.info.outputs.NAME }}
+          ARCH: ${{ matrix.arch }}
+          UPSTREAM: ${{ steps.upstream.outcome }}
+          PROFILE: ${{ steps.profile.outcome }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          if [ -s rss.json ]; then rss=$(cat rss.json); else rss=null; fi
+          jq -n --arg image "$IMAGE" --arg name "$NAME" --arg arch "$ARCH" --arg digest "${DIGEST:-}" \
+            --argjson unpacked "${UNPACKED:-0}" --arg upstream "$UPSTREAM" --arg profile "$PROFILE" --argjson rss "$rss" \
+            '{image: $image, name: $name, arch: $arch, platform: ("linux/" + $arch), digest: $digest,
+              unpacked_bytes: $unpacked, verified: {upstream: ($upstream == "success"), profile: ($profile == "success")},
+              rss: $rss}' > "out/check-$IMAGE-$ARCH.json"
+          cat "out/check-$IMAGE-$ARCH.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-${{ steps.info.outputs.IMAGE }}-${{ matrix.arch }}
+          path: out/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ steps.info.outputs.IMAGE }}-${{ matrix.arch }}
+          path: results/
+          retention-days: 14
+      - name: Fail when a check failed
+        if: steps.upstream.outcome != 'success' || steps.profile.outcome != 'success' || steps.rss.outcome != 'success'
+        run: |
+          echo "upstream sizing ${{ steps.upstream.outcome }}, profile ${{ steps.profile.outcome }}, memory ${{ steps.rss.outcome }}"
+          exit 1

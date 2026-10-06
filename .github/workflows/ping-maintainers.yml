@@ -1,9 +1,5 @@
 name: Ping Maintainers
-on:
-  workflow_run:
-    workflows: [ "get-maintainers"]
-    types:
-      - completed
+on: [ workflow_dispatch ]
 permissions:
   pull-requests: write
 jobs:

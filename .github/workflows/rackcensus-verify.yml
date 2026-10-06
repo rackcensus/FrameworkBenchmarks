@@ -1,0 +1,56 @@
+name: rackcensus verify
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      frameworks: ${{ steps.list.outputs.frameworks }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: list
+        run: echo "frameworks=$(python3 rackcensus/frameworks.py matrix | jq -c '[.[].name]')" >> "$GITHUB_OUTPUT"
+
+  verify:
+    needs: matrix
+    name: ${{ matrix.framework }} on ${{ matrix.runner }}, ${{ matrix.sizing }} sizing
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJSON(needs.matrix.outputs.frameworks) }}
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        sizing: [upstream, profile]
+    env:
+      FRAMEWORK: ${{ matrix.framework }}
+      SIZING: ${{ matrix.sizing }}
+      TFB_PRIVILEGED: "0"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Verify json, db and fortune
+        run: |
+          set -euo pipefail
+          eval "$(python3 rackcensus/frameworks.py info "$FRAMEWORK")"
+          args=(--mode verify --test "$TEST" --type json db fortune)
+          if [ "$SIZING" = profile ]; then
+            set -a
+            eval "$(python3 rackcensus/frameworks.py profile "$FRAMEWORK")"
+            set +a
+            args+=(--cpuset-cpus 0-1 --test-container-memory 2g)
+          fi
+          ./tfb "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verify-${{ matrix.framework }}-${{ matrix.runner }}-${{ matrix.sizing }}
+          path: results/
+          retention-days: 14
