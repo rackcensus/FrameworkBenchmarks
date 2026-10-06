@@ -1,4 +1,4 @@
-FROM ruby:4.0
+FROM ruby:4.0@sha256:08325a579fcef06b1d53aab2d0c9f9dad8b12a454b7d65fda6e8fbb695299856
 
 RUN apt-get update -yqq && apt-get install -yqq --no-install-recommends redis-server
 

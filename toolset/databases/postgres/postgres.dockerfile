@@ -1,4 +1,4 @@
-FROM postgres:18-trixie
+FROM postgres:18-trixie@sha256:fc973eb97c9fd04bfa1840e0f510719a584ccb3be8debfe6a4144637a9dfe8cf
 
 ENV POSTGRES_DB=hello_world \
     POSTGRES_PASSWORD=benchmarkdbpass \

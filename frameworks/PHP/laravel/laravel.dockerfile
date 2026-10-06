@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -13,7 +13,7 @@ RUN apt-get install -yqq nginx git unzip \
 RUN apt install libjemalloc2
 ENV LD_PRELOAD=libjemalloc.so.2
 
-COPY --from=composer/composer:2-bin --link /composer /usr/local/bin/composer
+COPY --from=composer/composer:2-bin@sha256:696bfbbb82d8ab6ad3672c505bedd659e3815fd1c03cb5ef65ef7ee07a083fa6 --link /composer /usr/local/bin/composer
 
 COPY --link deploy/conf/* /etc/php/8.5/fpm/
 WORKDIR /laravel
