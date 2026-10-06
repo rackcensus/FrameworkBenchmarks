@@ -255,8 +255,8 @@ def main():
                 tests[test_type]["worker_peak_bytes"].get("pss"), tests[test_type]["db_connections_max"]))
         kills = oom_kills(app)
     finally:
-        docker("rm", "-f", app, check=False)
-        docker("rm", "-f", database, check=False)
+        docker("rm", "-f", "-v", app, check=False)
+        docker("rm", "-f", "-v", database, check=False)
         docker("network", "rm", network, check=False)
 
     worker = {}
