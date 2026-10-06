@@ -32,6 +32,7 @@ webserver = "Socketify.py"
 versus = "wsgi"
 
 [postgresql]
+urls.json = "/json"
 urls.db = "/db"
 urls.query = "/dbs?queries="
 urls.update = "/update?queries="

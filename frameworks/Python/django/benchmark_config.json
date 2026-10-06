@@ -46,6 +46,7 @@
         "versus": "wsgi"
       },
       "postgresql": {
+        "json_url": "/json",
         "db_url": "/db",
         "query_url": "/dbs?queries=",
         "fortune_url": "/fortunes",
