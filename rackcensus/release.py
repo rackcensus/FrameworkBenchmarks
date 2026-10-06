@@ -34,7 +34,7 @@ def main():
     problems = []
     images = {}
     entries = []
-    measurements = {}
+    methods = set()
 
     for entry in frameworks.load():
         image = entry["image"]
@@ -45,6 +45,7 @@ def main():
         platforms = {}
         rss_proc = {}
         rss_base = {}
+        memory = {}
         verified = {}
         for arch in ARCHES:
             platform = "linux/%s" % arch
@@ -73,15 +74,8 @@ def main():
                 continue
             rss_proc[arch] = rss["rss_proc_mb"]
             rss_base[arch] = rss["rss_base_mb"]
-            measurements.setdefault(entry["name"], {})[arch] = {
-                "rss_proc_mb": rss["rss_proc_mb"],
-                "rss_base_mb": rss["rss_base_mb"],
-                "resident_mb_1_worker": round(rss["runs"]["1"]["steady_bytes"] / 1048576.0, 1),
-                "resident_mb_2_workers": round(rss["runs"]["2"]["steady_bytes"] / 1048576.0, 1),
-                "memory_current_mb_1_worker": round(rss["runs"]["1"]["steady_current_bytes"] / 1048576.0, 1),
-                "memory_current_mb_2_workers": round(rss["runs"]["2"]["steady_current_bytes"] / 1048576.0, 1),
-                "method": rss["method"],
-            }
+            memory[arch] = rss["memory"]
+            methods.add(rss["method"])
         images[image] = {"repo": index["repo"], "index": index["index"], "platforms": platforms}
         entries.append({
             "name": entry["name"],
@@ -92,6 +86,7 @@ def main():
             "rss_base_mb": max(rss_base.values()) if rss_base else None,
             "urls": entry["urls"],
             "verified": verified,
+            "memory": memory,
         })
 
     if problems:
@@ -105,7 +100,7 @@ def main():
         "fork": {"repo": args.repo, "sha": args.sha},
         "images": images,
         "frameworks": entries,
-        "measurements": measurements,
+        "memory_method": sorted(methods),
     }
     with open(args.out, "w") as f:
         json.dump(document, f, indent=2)
